@@ -221,7 +221,8 @@ function vsz_cf7_get_the_form_list($fid = ''){
 function cmp_sort_form_name($a, $b)
 {
     //return $a->name > $b->name;
-    return strcmp($a->name(), $b->name());
+    // return strcmp($a->name(), $b->name());
+	return strcasecmp($a->title(), $b->title());
 
 }
 

@@ -61,8 +61,16 @@ else{
 			);
 		}
 
+		$lang = isset($_GET['lang']) ? sanitize_text_field($_GET['lang']) : '';
+		$translated_id = apply_filters('wpml_object_id', $fid, 'wpcf7_contact_form', false, $lang);
 		$menu_url = menu_page_url('contact-form-listing',false);
-		$url = $menu_url.'&cf7_id='.$fid;
+		if ($translated_id != $fid) {
+			$fid = '';
+			$url = $menu_url;
+		} else {
+			$fid = $translated_id;
+			$url = $menu_url . '&cf7_id=' . $fid;
+		}
 	}
 
 	//Get search related value

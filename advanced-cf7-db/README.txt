@@ -3,7 +3,7 @@ Contributors: vsourz1td
 Tags: contact form 7 db, contact form db, advanced cf7 db, contact form 7, database
 Requires at least: 4.0
 Tested up to: 6.9.4
-Stable tag: 2.1.0
+Stable tag: 2.1.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -173,6 +173,11 @@ return $contact_form_ids;
 
 
 == Changelog ==
+= 2.1.1 =
+* Data Storage Update: Data is now saved in the WordPress uploads directory instead of the plugin's admin CSV directory, improving compatibility and organization.
+* Form List Enhancement: The Import CSV form selection and Advanced CF7 DB form selection now display an alphabetically sorted list of forms for easier navigation.
+* WPML Support: Added compatibility with WPML for multilingual functionality.
+
 = 2.1.0 =
 * Security Fix: Fixed Cross-Site Request Forgery (CSRF) vulnerability in form entry deletion (CVE-2026-0811)
 * Security Fix: Added proper authorization checks for form submissions export functionality (CVE-2026-0814)

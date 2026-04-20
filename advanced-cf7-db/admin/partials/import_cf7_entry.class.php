@@ -12,6 +12,11 @@ if(!is_user_logged_in() || empty($_POST)){
 //Define site global variables
 global $wpdb,$vsz_cf7_csv_upload_error;
 
+//Define base directory and URL for storing CSV files in uploads
+$upload_dir = wp_upload_dir();
+$vsz_cf7_csv_base_dir = trailingslashit($upload_dir['basedir']) . 'advanced-cf7-db-import/csv/';
+$vsz_cf7_csv_base_url = trailingslashit($upload_dir['baseurl']) . 'advanced-cf7-db-import/csv/';
+
 // Set Error object for get error during import process
 $vsz_cf7_csv_upload_error = new WP_Error;
 
@@ -83,12 +88,21 @@ if(isset($_POST['submit']) && isset($_FILES['importFormList']) && !empty($_FILES
 		WP_Filesystem();
 		global $wp_filesystem;
 
+		if ( ! file_exists( $vsz_cf7_csv_base_dir ) ) {
+			wp_mkdir_p( $vsz_cf7_csv_base_dir );
+		}
+
+		$csv_target_file = $vsz_cf7_csv_base_dir . $newfilename;
+
 		//if(move_uploaded_file($_FILES["importFormList"]["tmp_name"], dirname(dirname(__FILE__))."/csv/".$newfilename)){
-		if($wp_filesystem->move($upload['file'], dirname(dirname(__FILE__))."/csv/".$newfilename)) {
+
+		// if($wp_filesystem->move($upload['file'], dirname(dirname(__FILE__))."/csv/".$newfilename)) {
+		if($wp_filesystem->move($upload['file'], $csv_target_file)) {
 			// 2.0.4 update end
 
 			//Get moved file path
-			$csv_file =  dirname(dirname(__FILE__))."/csv/".$newfilename;
+			// $csv_file =  dirname(dirname(__FILE__))."/csv/".$newfilename;
+			$csv_file =  $csv_target_file;
 			//Check file is exist or not and open in read mode
 
 			if (($handle = fopen($csv_file, "r")) !== FALSE){ // @codingStandardsIgnoreLine.
@@ -294,7 +308,12 @@ if(is_wp_error($vsz_cf7_csv_upload_error)){
 if(count($error_csv) >= 1){
 
 	$error_file_name = "upload_error".gmdate("Y-m-d H:i:s:u").".csv";
-	$myfile = fopen(dirname(dirname(__FILE__))."/csv/".$error_file_name, 'w') or // @codingStandardsIgnoreLine
+	if ( ! file_exists( $vsz_cf7_csv_base_dir ) ) {
+		wp_mkdir_p( $vsz_cf7_csv_base_dir );
+	}
+
+	// $myfile = fopen(dirname(dirname(__FILE__))."/csv/".$error_file_name, 'w') or // @codingStandardsIgnoreLine
+	$myfile = fopen($vsz_cf7_csv_base_dir.$error_file_name, 'w') or // @codingStandardsIgnoreLine
 		die("<div class='notice error is-dismissible'><p>Unable to open file!</p></div>");
 
 	array_unshift($error_csv,$header);
@@ -304,7 +323,8 @@ if(count($error_csv) >= 1){
 	}
 	fclose($myfile); // @codingStandardsIgnoreLine
 
-	$fileNamePath = plugin_dir_url(dirname( __FILE__)).'csv/'.$error_file_name;
+	// $fileNamePath = plugin_dir_url(dirname( __FILE__)).'csv/'.$error_file_name;
+	$fileNamePath = $vsz_cf7_csv_base_url.$error_file_name;
 
 	echo '<div class="notice error is-dismissible"><p>You can download the error file from <a href="'.esc_url($fileNamePath).'" target="_blank">here</a> </p></div>';
 }
