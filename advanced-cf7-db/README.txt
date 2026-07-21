@@ -2,8 +2,8 @@
 Contributors: vsourz1td
 Tags: contact form 7 db, contact form db, advanced cf7 db, contact form 7, database
 Requires at least: 4.0
-Tested up to: 7.0
-Stable tag: 2.1.2
+Tested up to: 7.0.2
+Stable tag: 2.1.3
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -173,6 +173,9 @@ return $contact_form_ids;
 
 
 == Changelog ==
+= 2.1.3 =
+* Security: Fixed a potential CSV/Excel formula injection vulnerability. Exported values that could be interpreted as spreadsheet formulas (including those beginning with `=`, `+`, `-`, `@`, leading tabs/newlines, or common functions such as `HYPERLINK()` and `WEBSERVICE()`) are now automatically escaped and exported as plain text, preventing formula execution and external service calls when opened in spreadsheet applications.
+
 = 2.1.2 =
 * Security: Added capability checks to restrict unauthorized access to frontend views.
 * Enhancement: Added integration with Advanced CF7 DB – User Access Manager plugin for improved user access control.

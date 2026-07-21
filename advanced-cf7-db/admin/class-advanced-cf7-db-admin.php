@@ -1540,22 +1540,29 @@ function vsz_cf7_export_to_csv($fid, $ids_export = ''){
 			error_log( 'CF7 CSV buffer was clean (' . strlen( $stray_output ) . ' bytes whitespace-only)' );
 		}
         
-		//Generate CSV file
-		header('Content-Type: text/csv; charset=UTF-8');
-		header('Content-Disposition: attachment;filename="'.$form_title.'.csv";');
-		$fp = fopen('php://output', 'w'); // @codingStandardsIgnoreLine
-		fputs($fp, "\xEF\xBB\xBF"); // @codingStandardsIgnoreLine
-        fputcsv($fp, array_values(array_map('sanitize_text_field',$fields)));
-
-		foreach ($data_sorted as $k => $v){
-			$temp_value = array();
-			foreach ($fields as $k2 => $v2){
-				// $temp_value[] = ((isset($v[$k2])) ? html_entity_decode($v[$k2]) : '');
-                $temp_value[] = ((isset($v[$k2])) ? html_entity_decode($v[$k2], ENT_QUOTES | ENT_HTML5, 'UTF-8') : '');
+			//Generate CSV file
+			header('Content-Type: text/csv; charset=UTF-8');
+			header('Content-Disposition: attachment;filename="'.$form_title.'.csv";');
+			$fp = fopen('php://output', 'w'); // @codingStandardsIgnoreLine
+			fputs($fp, "\xEF\xBB\xBF"); // @codingStandardsIgnoreLine
+	        // Neutralize header labels as well to avoid formula-like headers
+	        $csv_headers = array();
+	        foreach ( array_values(array_map('sanitize_text_field',$fields)) as $h ) {
+				$csv_headers[] = vsz_cf7_neutralize_export_cell( $h );
 			}
-            
-			fputcsv($fp, $temp_value);
-		}
+	        fputcsv($fp, $csv_headers);
+
+			foreach ($data_sorted as $k => $v){
+				$temp_value = array();
+				foreach ($fields as $k2 => $v2){
+					$raw = (isset($v[$k2])) ? $v[$k2] : '';
+					// decode and neutralize
+					$cell = vsz_cf7_neutralize_export_cell( $raw );
+					$temp_value[] = $cell;
+				}
+
+				fputcsv($fp, $temp_value);
+			}
 
 		fclose($fp); // @codingStandardsIgnoreLine
 		exit();
@@ -1633,9 +1640,14 @@ function vsz_cf7_export_to_excel($fid, $ids_export){
 			/* $spreadsheet = new Spreadsheet();
 			$sheet = $spreadsheet->getActiveSheet(); */
             
-            // xlsx sheet
-            $writer = new XLSXWriter();
-			$writer->writeSheetRow('Sheet1', $arrHeader);
+			// xlsx sheet
+			$writer = new XLSXWriter();
+			// Neutralize header labels to avoid formula-like headers
+			$normalized_headers = array();
+			foreach ( $arrHeader as $h ) {
+				$normalized_headers[] = vsz_cf7_neutralize_export_cell( $h );
+			}
+			$writer->writeSheetRow('Sheet1', $normalized_headers);
 
 			//First we will set header in excel file
 			$col = 1;
@@ -1658,16 +1670,11 @@ function vsz_cf7_export_to_excel($fid, $ids_export){
 					//$colVal = (isset($v[$k2]) ? html_entity_decode($v[$k2]) : '');
 					//$sheet->setCellValueByColumnAndRow($col, $row, $colVal);
                     
-                    $colVal = isset($v[$k2]) ? $v[$k2] : '';
-                    // Normalize encoding to UTF-8
-                    $colVal = html_entity_decode(trim(wp_unslash($colVal)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-                    $colVal = mb_convert_encoding($colVal, 'UTF-8', 'UTF-8');
-                    
-                    // xls
-                    // $sheet->setCellValueByColumnAndRow($col, $row, $colVal);
-                    
-                    // xlsx
-                    $data[] = $colVal;
+					$raw = isset($v[$k2]) ? $v[$k2] : '';
+					// Neutralize and normalize encoding
+					$cell = vsz_cf7_neutralize_export_cell( $raw );
+					$cell = mb_convert_encoding( $cell, 'UTF-8', 'UTF-8' );
+					$data[] = $cell;
                     
 					$col++;
 				}
@@ -1843,6 +1850,24 @@ function create_table_cf7_vdata_add_blog(){
         require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
         dbDelta( $sql );
     }
+}
+/**
+ * Neutralize cells for CSV/XLSX export to prevent formula injection.
+ * Prefixes cells starting with = + - @ or tab/carriage-return with a single quote.
+ */
+if ( ! function_exists( 'vsz_cf7_neutralize_export_cell' ) ) {
+	function vsz_cf7_neutralize_export_cell( $cell ) {
+		if ( $cell === null ) {
+			return '';
+		}
+		$cell = (string) $cell;
+		$decoded = html_entity_decode( $cell, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		$first = mb_substr( $decoded, 0, 1 );
+		if ( $decoded !== '' && in_array( $first, array('=', '+', '-', '@', "\t", "\r"), true ) ) {
+			return "'" . $decoded;
+		}
+		return $decoded;
+	}
 }
 /**
  * Contact Form entry table created from here
